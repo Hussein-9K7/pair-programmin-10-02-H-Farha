@@ -1,64 +1,91 @@
 const User = require("../models/userModel");
 
-// GET /users
-const getAllUsers = (req, res) => {
-  const users = User.getAll();
-  res.json(users);
-};
-
-// POST /users
-const createUser = (req, res) => {
-  const newUser = User.addOne({ ...req.body }); // Spread the req.body object
-
-  if (newUser) {
-    res.status(201).json(newUser);
-  } else {
-    // Handle error (e.g., failed to create user)
-    res.status(400).json({ message: "Invalid user data" });
-  }
-};
- 
-// GET /users/:userId
-const getUserById = (req, res) => {
-  const userId = req.params.userId;
-  const user = User.findById(userId);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404).json({ message: "User not found" });
+// GET all users
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 }); // Sorting by creation date (latest first)
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving users", error: error.message });
   }
 };
 
-// PUT /users/:userId
-const updateUser = (req, res) => {
-  const userId = req.params.userId;
-  const updatedUser = User.updateOneById(userId, { ...req.body }); // Spread the req.body object
+// POST a new user
+const createUser = async (req, res) => {
+  const { name, email, password, phone_number, gender, date_of_birth, membership_status } = req.body;
 
-  if (updatedUser) {
-    res.json(updatedUser);
-  } else {
-    // Handle update failure (e.g., user not found)
-    res.status(404).json({ message: "User not found" });
+  try {
+    const newUser = new User({
+      name,
+      email,
+      password,  // In a real application, you should hash the password before saving.
+      phone_number,
+      gender,
+      date_of_birth,
+      membership_status,
+    });
+
+    const savedUser = await newUser.save();
+    res.status(201).json(savedUser);
+  } catch (error) {
+    res.status(400).json({ message: "Error creating user", error: error.message });
   }
 };
 
-// DELETE /users/:userId
-const deleteUser = (req, res) => {
-  const userId = req.params.userId;
-  const isDeleted = User.deleteOneById(userId);
+// GET a user by ID
+const getUserById = async (req, res) => {
+  const { userId } = req.params;
 
-  if (isDeleted) {
-    res.status(204).send();
-  } else {
-    // Handle deletion failure (e.g., user not found)
-    res.status(404).json({ message: "User not found" });
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving user", error: error.message });
   }
 };
 
-module.exports = {
-  getAllUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser,
+// PUT (Update) a user by ID
+const updateUser = async (req, res) => {
+  const { userId } = req.params;
+  const { name, email, password, phone_number, gender, date_of_birth, membership_status } = req.body;
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { name, email, password, phone_number, gender, date_of_birth, membership_status },
+      { new: true } // Returns the updated user
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating user", error: error.message });
+  }
 };
+
+// DELETE a user by ID
+const deleteUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(204).send(); // No content to return on successful deletion
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting user", error: error.message });
+  }
+};
+
+module.exports = { getAllUsers, createUser, getUserById, updateUser, deleteUser };

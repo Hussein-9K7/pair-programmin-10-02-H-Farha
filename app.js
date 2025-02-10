@@ -1,9 +1,10 @@
 const express = require("express");
 const app = express();
+const connectDB = require("./config/db");
 const tourRouter = require("./routes/tourRouter");
 const userRouter = require("./routes/userRouter");
 const { unknownEndpoint } = require("./middleware/customMiddleware");
-
+connectDB()
 const morgan = require("morgan");
 app.use(morgan("dev"));
 
@@ -22,6 +23,6 @@ app.use(unknownEndpoint);
 const port = process.env.PORT || 4000;
 // Start the server
 app.listen(port, () => {
-  console.log(`http://localhost:${port}/api/tours`);
+  console.log(`http://localhost:${port}/api/tours , http://localhost:${port}/api/users `);
 });
  
