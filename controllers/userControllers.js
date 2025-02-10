@@ -1,24 +1,32 @@
 const User = require("../models/userModel");
+const { ObjectId } = require("mongoose").Types;
 
-// GET all users
+
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 }); // Sorting by creation date (latest first)
+    const users = await User.find().sort({ createdAt: -1 }); 
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: "Error retrieving users", error: error.message });
   }
 };
 
-// POST a new user
+
 const createUser = async (req, res) => {
   const { name, email, password, phone_number, gender, date_of_birth, membership_status } = req.body;
 
   try {
+    
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "Failed to create user" });
+    }
+
     const newUser = new User({
       name,
       email,
-      password,  // In a real application, you should hash the password before saving.
+      password,  
       phone_number,
       gender,
       date_of_birth,
@@ -32,7 +40,7 @@ const createUser = async (req, res) => {
   }
 };
 
-// GET a user by ID
+
 const getUserById = async (req, res) => {
   const { userId } = req.params;
 
@@ -49,16 +57,22 @@ const getUserById = async (req, res) => {
   }
 };
 
-// PUT (Update) a user by ID
+
 const updateUser = async (req, res) => {
   const { userId } = req.params;
+
+
+  if (!ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
   const { name, email, password, phone_number, gender, date_of_birth, membership_status } = req.body;
 
   try {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { name, email, password, phone_number, gender, date_of_birth, membership_status },
-      { new: true } // Returns the updated user
+      { new: true }
     );
 
     if (!updatedUser) {
@@ -71,9 +85,14 @@ const updateUser = async (req, res) => {
   }
 };
 
-// DELETE a user by ID
+
 const deleteUser = async (req, res) => {
   const { userId } = req.params;
+
+
+  if (!ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
 
   try {
     const deletedUser = await User.findByIdAndDelete(userId);
@@ -82,7 +101,7 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(204).send(); // No content to return on successful deletion
+    res.status(204).send(); 
   } catch (error) {
     res.status(500).json({ message: "Error deleting user", error: error.message });
   }
